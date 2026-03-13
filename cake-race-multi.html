@@ -584,8 +584,9 @@ function toast(msg) {
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function uid(){ return Math.random().toString(36).slice(2,10); }
-function pub(topic, data){
-  if(mqttClient && mqttClient.connected) mqttClient.publish(topic, JSON.stringify(data));
+function pub(topic, data, retain=false){
+  if(mqttClient && mqttClient.connected)
+    mqttClient.publish(topic, JSON.stringify(data), {retain});
 }
 
 // ══════════════════════════════════════════
@@ -638,12 +639,12 @@ async function createRoom() {
       try { onGuestMsg(JSON.parse(buf.toString())); } catch(e){}
     });
 
-    // Broadcaster la présence toutes les 2s pour que les guests trouvent auto
+    // Broadcaster la présence toutes les 2s — retained pour livraison immédiate
     window._discoBroadcast = setInterval(() => {
       if(isHost && mqttClient && mqttClient.connected)
-        pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:Object.keys(players).length });
+        pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:Object.keys(players).length }, true);
     }, 2000);
-    pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:1 });
+    pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:1 }, true);
 
     st.innerHTML = '';
     openLobby();
@@ -825,6 +826,8 @@ function renderPlayers(arr) {
 //  LANCER (HOST)
 // ══════════════════════════════════════════
 function hostStartGame() {
+  // Effacer le message retained — la room n'est plus disponible
+  pub(T_DISCO, '', true);
   Object.keys(players).forEach(id => { players[id].score=0; });
   const arr=getArr();
   pub(TH2G(), { type:'start', players:arr });
@@ -987,7 +990,10 @@ function playAgain() {
   } else { openLobby('guest'); renderPlayers(guestPlayerList); }
 }
 
-function leaveRoom()  { cleanup(); showScreen('s-menu'); }
+function leaveRoom()  {
+  if(isHost) pub(T_DISCO, '', true); // effacer retained
+  cleanup(); showScreen('s-menu');
+}
 function backToMenu() { cleanup(); showScreen('s-menu'); }
 
 function clearInts(){
