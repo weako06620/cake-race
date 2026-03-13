@@ -255,8 +255,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .end-title.lose{color:#aaa}
 .end-podium{background:white;border-radius:20px;padding:1rem 1.3rem;box-shadow:0 12px 40px rgba(0,0,0,.08);width:100%;max-width:380px}
 /* ── ÉCRAN FIN ── */
-#s-end{background:#0d0d14;justify-content:center;padding:1.5rem 1rem;gap:.5rem;overflow:hidden}
-.end-rays{position:absolute;inset:0;pointer-events:none;
+#s-end{background:#0d0d14;justify-content:flex-start;align-items:center;padding:2rem 1rem 1.5rem;gap:.6rem;overflow-y:auto}
+.end-rays{position:fixed;inset:0;pointer-events:none;z-index:-1;
   background:conic-gradient(from 0deg at 50% 42%,
     transparent 0deg,rgba(191,127,255,.07) 10deg,transparent 20deg,
     transparent 40deg,rgba(255,217,61,.07) 50deg,transparent 60deg,
@@ -269,7 +269,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     transparent 320deg,rgba(191,127,255,.07) 330deg,transparent 340deg);
   animation:raysRot 10s linear infinite}
 @keyframes raysRot{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-.end-circle{position:absolute;width:220px;height:220px;border-radius:50%;
+.end-circle{position:fixed;width:220px;height:220px;border-radius:50%;
   background:radial-gradient(circle,rgba(255,217,61,.15) 0%,transparent 70%);
   animation:circPulse 2s ease-in-out infinite;z-index:1;top:10%}
 @keyframes circPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
@@ -293,7 +293,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   animation:fadeUp .5s ease .3s both}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .end-title{display:none}
-.end-podium{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+.end-podium{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.85);
   border-radius:20px;padding:.85rem 1.2rem;width:100%;max-width:380px;
   position:relative;z-index:2;animation:fadeUp .5s ease .7s both}
 .podium-row{display:flex;align-items:center;gap:10px;padding:.48rem .3rem;border-bottom:1px solid #f5f5f5;animation:slideIn .3s ease both}
