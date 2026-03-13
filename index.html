@@ -319,6 +319,41 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   .game-center{padding:.6rem .4rem}
   .goal-badge{display:none}
 }
+
+/* ── NAVIGATEUR DE SALLES ── */
+#s-rooms{background:linear-gradient(135deg,#FFF0E6 0%,#FFE4F0 50%,#E4F8F7 100%);
+  justify-content:flex-start;padding:1.5rem 1rem;gap:.9rem}
+.rooms-title{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--choco);text-align:center}
+.rooms-subtitle{font-size:.82rem;color:#bbb;font-weight:700;text-align:center;
+  font-family:'Nunito',sans-serif}
+.rooms-list{width:100%;max-width:420px;display:flex;flex-direction:column;gap:.65rem}
+.room-card{background:white;border-radius:18px;padding:1rem 1.2rem;
+  box-shadow:0 6px 24px rgba(0,0,0,.08);border:2px solid transparent;
+  display:flex;align-items:center;gap:.9rem;cursor:pointer;
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),box-shadow .12s,border-color .12s;
+  -webkit-tap-highlight-color:transparent}
+.room-card:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 10px 32px rgba(255,107,157,.18);border-color:rgba(255,107,157,.3)}
+.room-card:active{transform:scale(.96)}
+.room-card-icon{font-size:2.2rem;line-height:1;flex-shrink:0}
+.room-card-info{flex:1;min-width:0}
+.room-card-host{font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--choco);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-card-host span{font-size:.75rem;color:#bbb;font-family:'Nunito',sans-serif;font-weight:700}
+.room-card-count{font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;color:var(--mint)}
+.room-card-join{font-family:'Fredoka One',cursive;font-size:.85rem;color:white;
+  background:linear-gradient(135deg,var(--peach),var(--rose));
+  padding:.3rem .85rem;border-radius:50px;white-space:nowrap;flex-shrink:0;
+  box-shadow:0 3px 10px rgba(255,107,157,.35)}
+.rooms-empty{text-align:center;padding:2rem 1rem;color:#ccc;font-weight:700;
+  font-family:'Nunito',sans-serif;font-size:.9rem}
+.rooms-empty .rooms-empty-icon{font-size:2.5rem;display:block;margin-bottom:.5rem}
+.rooms-scan{display:flex;align-items:center;justify-content:center;gap:.5rem;
+  font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:700;color:var(--mint)}
+.rooms-scan-dot{width:8px;height:8px;border-radius:50%;background:var(--mint);
+  animation:scanPulse .8s ease-in-out infinite}
+.rooms-scan-dot:nth-child(2){animation-delay:.15s}
+.rooms-scan-dot:nth-child(3){animation-delay:.3s}
+@keyframes scanPulse{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
 </style>
 </head>
 <body>
@@ -361,8 +396,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
   <div class="menu-card">
     <h3>🚀 Rejoindre une partie</h3>
-    <button class="btn btn-secondary" onclick="joinRoom()">🎂 Rejoindre</button>
+    <button class="btn btn-secondary" onclick="openRoomBrowser()">🔍 Voir les parties disponibles</button>
     <div class="info-msg" id="joinError"></div>
+  </div>
+</div>
+
+<!-- NAVIGATEUR DE SALLES -->
+<div id="s-rooms" class="screen">
+  <div class="logo" style="font-size:clamp(2rem,7vw,3.5rem)">🎂</div>
+  <div class="rooms-title">Parties disponibles</div>
+  <div class="rooms-scan" id="roomsScan">
+    <div class="rooms-scan-dot"></div>
+    <div class="rooms-scan-dot"></div>
+    <div class="rooms-scan-dot"></div>
+    Recherche en cours...
+  </div>
+  <div class="rooms-list" id="roomsList"></div>
+  <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
+    <button class="btn btn-gray" onclick="closeRoomBrowser()">← Retour</button>
   </div>
 </div>
 
@@ -552,7 +603,8 @@ function playVsBots() {
 
 const TH2G = () => `cr/${roomCode}/h2g`;
 const TG2H = () => `cr/${roomCode}/g2h`;
-const T_DISCO = 'cr/discovery'; // topic de découverte auto
+const T_ROOMS   = 'cr/rooms/';         // cr/rooms/{code} — retained par room
+const T_DISCO   = 'cr/rooms/#';        // wildcard pour scanner toutes les salles
 
 // ══════════════════════════════════════════
 //  BG
@@ -639,12 +691,13 @@ async function createRoom() {
       try { onGuestMsg(JSON.parse(buf.toString())); } catch(e){}
     });
 
-    // Broadcaster la présence toutes les 2s — retained pour livraison immédiate
-    window._discoBroadcast = setInterval(() => {
-      if(isHost && mqttClient && mqttClient.connected)
-        pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:Object.keys(players).length }, true);
-    }, 2000);
-    pub(T_DISCO, { type:'room_open', room:roomCode, host:myName, count:1 }, true);
+    // Publier la salle en retained — visible immédiatement pour tous les guests
+    const pubRoom = () => {
+      if(isHost && mqttClient?.connected)
+        pub(T_ROOMS+roomCode, { host:myName, count:Object.keys(players).length, room:roomCode }, true);
+    };
+    pubRoom();
+    window._discoBroadcast = setInterval(pubRoom, 3000);
 
     st.innerHTML = '';
     openLobby();
@@ -658,65 +711,114 @@ async function createRoom() {
 // ══════════════════════════════════════════
 //  JOIN ROOM
 // ══════════════════════════════════════════
-async function joinRoom() {
+// ── NAVIGATEUR DE SALLES ──────────────────────────────────
+let _roomsBrowser = null;   // client MQTT temporaire pour scanner
+let _roomsFound   = {};     // roomCode → {host, count}
+let _roomsScanTO  = null;
+
+async function openRoomBrowser() {
+  const name = document.getElementById('inputName').value.trim();
+  if (!name) { toast('✏️ Entre ton pseudo d\'abord !'); return; }
+
+  showScreen('s-rooms');
+  document.getElementById('roomsList').innerHTML = '';
+  document.getElementById('roomsScan').style.display = 'flex';
+  _roomsFound = {};
+
+  // Connexion MQTT légère juste pour scanner
+  if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
+  try {
+    _roomsBrowser = await mqttConnect();
+    _roomsBrowser.subscribe('cr/rooms/#');
+    _roomsBrowser.on('message', (topic, buf) => {
+      const code = topic.replace('cr/rooms/', '');
+      if (!code || code === '#') return;
+      try {
+        const payload = buf.toString();
+        if (!payload) { // message vide = room supprimée
+          delete _roomsFound[code];
+        } else {
+          _roomsFound[code] = JSON.parse(payload);
+        }
+        renderRoomsList();
+      } catch(e){}
+    });
+    // Après 3s afficher "aucune" si rien
+    _roomsScanTO = setTimeout(() => {
+      document.getElementById('roomsScan').style.display = 'none';
+      renderRoomsList();
+    }, 3000);
+  } catch(e) {
+    document.getElementById('roomsScan').style.display = 'none';
+    document.getElementById('roomsList').innerHTML = '<div class="rooms-empty"><span class="rooms-empty-icon">⚠️</span>Erreur de connexion. Vérifie ta connexion internet.</div>';
+  }
+}
+
+function renderRoomsList() {
+  const list = document.getElementById('roomsList');
+  const rooms = Object.values(_roomsFound);
+  if (rooms.length === 0) {
+    list.innerHTML = '<div class="rooms-empty"><span class="rooms-empty-icon">🍰</span>Aucune partie en cours.<br>Crée-en une pour que tes amis te rejoignent !</div>';
+    return;
+  }
+  list.innerHTML = '';
+  rooms.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.innerHTML = \`
+      <div class="room-card-icon">🎂</div>
+      <div class="room-card-info">
+        <div class="room-card-host">\${esc(r.host)} <span>crée une partie</span></div>
+        <div class="room-card-count">👥 \${r.count} joueur\${r.count>1?'s':''} dans le salon</div>
+      </div>
+      <div class="room-card-join">Rejoindre</div>
+    \`;
+    card.onclick = () => joinSpecificRoom(r.room, r.host);
+    list.appendChild(card);
+  });
+}
+
+function closeRoomBrowser() {
+  clearTimeout(_roomsScanTO);
+  if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
+  showScreen('s-menu');
+}
+
+async function joinSpecificRoom(targetRoom, hostName) {
   const name  = document.getElementById('inputName').value.trim();
   const errEl = document.getElementById('joinError');
-  errEl.textContent = '';
 
-  if (!name) { toast('✏️ Entre ton pseudo !'); return; }
+  // Fermer le browser MQTT proprement
+  clearTimeout(_roomsScanTO);
+  if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
 
-  if (mqttClient) { mqttClient.end(true); mqttClient = null; }
-  errEl.innerHTML = '<span class="spinner"></span> Recherche d\'une partie...';
+  showScreen('s-lobby');
+  setLobbyStatus('<span class="spinner"></span> Connexion à la partie de ' + esc(hostName) + '...');
 
   try {
+    if (mqttClient) { mqttClient.end(true); mqttClient = null; }
     mqttClient = await mqttConnect();
-    isHost = false;
-    myId   = uid();
-    myName = name;
+    isHost    = false;
+    myId      = uid();
+    myName    = name;
+    roomCode  = targetRoom;
 
-    // Écouter le topic découverte pour trouver la room automatiquement
-    mqttClient.subscribe(T_DISCO);
-
-    let found = false;
+    mqttClient.subscribe(TH2G());
     mqttClient.on('message', (topic, buf) => {
-      if (topic === T_DISCO && !found) {
-        try {
-          const msg = JSON.parse(buf.toString());
-          if (msg.type !== 'room_open') return;
-          found = true;
-          roomCode = msg.room;
-          clearTimeout(window._discoTO);
-          mqttClient.unsubscribe(T_DISCO);
-
-          // S'abonner au canal de la room
-          mqttClient.subscribe(TH2G());
-          pub(TG2H(), { type:'join', guestId:myId, name:myName });
-          openLobby('connecting');
-          setLobbyStatus('<span class="spinner"></span> Connexion à la partie de ' + msg.host + '...');
-
-          window._joinTO = setTimeout(() => {
-            if (document.getElementById('s-lobby').classList.contains('active')) {
-              errEl.innerHTML = '❌ Aucune réponse de l\'hôte.';
-              cleanup(); showScreen('s-menu');
-            }
-          }, 8000);
-        } catch(e) {}
-      } else if (topic !== T_DISCO) {
-        try { onHostMsg(JSON.parse(buf.toString())); } catch(e){}
-      }
+      try { onHostMsg(JSON.parse(buf.toString())); } catch(e){}
     });
-
     mqttClient.on('close', () => {
       if (gameActive) { gameActive=false; clearInts(); toast('❌ Connexion perdue'); showScreen('s-menu'); }
     });
 
-    // Timeout si aucune room trouvée
-    window._discoTO = setTimeout(() => {
-      if (!found) {
-        errEl.innerHTML = '❌ Aucune partie trouvée.<br><small>L\'hôte doit d\'abord créer une partie.</small>';
+    pub(TG2H(), { type:'join', guestId:myId, name:myName });
+
+    window._joinTO = setTimeout(() => {
+      if (document.getElementById('s-lobby').classList.contains('active')) {
+        errEl.innerHTML = '❌ Pas de réponse de l\'hôte.';
         cleanup(); showScreen('s-menu');
       }
-    }, 6000);
+    }, 8000);
 
   } catch(e) {
     console.error('[JOIN]', e);
@@ -991,7 +1093,7 @@ function playAgain() {
 }
 
 function leaveRoom()  {
-  if(isHost) pub(T_DISCO, '', true); // effacer retained
+  if(isHost) pub(T_ROOMS+roomCode, '', true); // effacer la salle
   cleanup(); showScreen('s-menu');
 }
 function backToMenu() { cleanup(); showScreen('s-menu'); }
