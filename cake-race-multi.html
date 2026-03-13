@@ -603,8 +603,7 @@ function playVsBots() {
 
 const TH2G = () => `cr/${roomCode}/h2g`;
 const TG2H = () => `cr/${roomCode}/g2h`;
-const T_ROOMS   = 'cr/rooms/';         // cr/rooms/{code} — retained par room
-const T_DISCO   = 'cr/rooms/#';        // wildcard pour scanner toutes les salles
+const T_LOBBY   = 'cr/lobby-v2';  // topic unique — tous les hôtes broadcastent ici
 
 // ══════════════════════════════════════════
 //  BG
@@ -691,13 +690,13 @@ async function createRoom() {
       try { onGuestMsg(JSON.parse(buf.toString())); } catch(e){}
     });
 
-    // Publier la salle en retained — visible immédiatement pour tous les guests
+    // Broadcaster la salle sur le topic commun — pas de wildcard
     const pubRoom = () => {
       if(isHost && mqttClient?.connected)
-        pub(T_ROOMS+roomCode, { host:myName, count:Object.keys(players).length, room:roomCode }, true);
+        pub(T_LOBBY, { room:roomCode, host:myName, count:Object.keys(players).length, ts:Date.now() });
     };
     pubRoom();
-    window._discoBroadcast = setInterval(pubRoom, 3000);
+    window._discoBroadcast = setInterval(pubRoom, 2000);
 
     st.innerHTML = '';
     openLobby();
@@ -712,9 +711,10 @@ async function createRoom() {
 //  JOIN ROOM
 // ══════════════════════════════════════════
 // ── NAVIGATEUR DE SALLES ──────────────────────────────────
-let _roomsBrowser = null;   // client MQTT temporaire pour scanner
-let _roomsFound   = {};     // roomCode → {host, count}
+let _roomsBrowser = null;
+let _roomsFound   = {};   // roomCode → {host, count, ts}
 let _roomsScanTO  = null;
+let _roomsStaleTO = null;
 
 async function openRoomBrowser() {
   const name = document.getElementById('inputName').value.trim();
@@ -725,32 +725,54 @@ async function openRoomBrowser() {
   document.getElementById('roomsScan').style.display = 'flex';
   _roomsFound = {};
 
-  // Connexion MQTT légère juste pour scanner
+  // Nettoyer l'ancien client si existant
   if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
+  clearTimeout(_roomsScanTO);
+  clearInterval(_roomsStaleTO);
+
   try {
     _roomsBrowser = await mqttConnect();
-    _roomsBrowser.subscribe('cr/rooms/#');
+
+    // Écouter le topic unique où tous les hôtes broadcastent
+    _roomsBrowser.subscribe(T_LOBBY, { qos:0 });
+
     _roomsBrowser.on('message', (topic, buf) => {
-      const code = topic.replace('cr/rooms/', '');
-      if (!code || code === '#') return;
+      if (topic !== T_LOBBY) return;
       try {
-        const payload = buf.toString();
-        if (!payload) { // message vide = room supprimée
-          delete _roomsFound[code];
-        } else {
-          _roomsFound[code] = JSON.parse(payload);
-        }
+        const msg = JSON.parse(buf.toString());
+        if (!msg.room || !msg.host) return;
+        _roomsFound[msg.room] = { ...msg, ts: Date.now() };
+        document.getElementById('roomsScan').style.display = 'none';
         renderRoomsList();
       } catch(e){}
     });
-    // Après 3s afficher "aucune" si rien
+
+    _roomsBrowser.on('error', () => {
+      document.getElementById('roomsScan').style.display = 'none';
+      document.getElementById('roomsList').innerHTML =
+        '<div class="rooms-empty"><span class="rooms-empty-icon">⚠️</span>Erreur réseau. Réessaie.</div>';
+    });
+
+    // Purger les salles qui n'ont pas broadcasté depuis 6s (hôte parti)
+    _roomsStaleTO = setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      Object.keys(_roomsFound).forEach(k => {
+        if (now - _roomsFound[k].ts > 6000) { delete _roomsFound[k]; changed = true; }
+      });
+      if (changed) renderRoomsList();
+    }, 2000);
+
+    // Après 5s sans rien → afficher "aucune"
     _roomsScanTO = setTimeout(() => {
       document.getElementById('roomsScan').style.display = 'none';
       renderRoomsList();
-    }, 3000);
+    }, 5000);
+
   } catch(e) {
     document.getElementById('roomsScan').style.display = 'none';
-    document.getElementById('roomsList').innerHTML = '<div class="rooms-empty"><span class="rooms-empty-icon">⚠️</span>Erreur de connexion. Vérifie ta connexion internet.</div>';
+    document.getElementById('roomsList').innerHTML =
+      '<div class="rooms-empty"><span class="rooms-empty-icon">⚠️</span>Impossible de se connecter au serveur.</div>';
   }
 }
 
@@ -780,7 +802,9 @@ function renderRoomsList() {
 
 function closeRoomBrowser() {
   clearTimeout(_roomsScanTO);
+  clearInterval(_roomsStaleTO);
   if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
+  _roomsFound = {};
   showScreen('s-menu');
 }
 
@@ -790,7 +814,9 @@ async function joinSpecificRoom(targetRoom, hostName) {
 
   // Fermer le browser MQTT proprement
   clearTimeout(_roomsScanTO);
+  clearInterval(_roomsStaleTO);
   if (_roomsBrowser) { try { _roomsBrowser.end(true); } catch(e){} _roomsBrowser = null; }
+  _roomsFound = {};
 
   showScreen('s-lobby');
   setLobbyStatus('<span class="spinner"></span> Connexion à la partie de ' + esc(hostName) + '...');
@@ -1093,7 +1119,7 @@ function playAgain() {
 }
 
 function leaveRoom()  {
-  if(isHost) pub(T_ROOMS+roomCode, '', true); // effacer la salle
+  // leaveRoom — clearInts() arrête le broadcast
   cleanup(); showScreen('s-menu');
 }
 function backToMenu() { cleanup(); showScreen('s-menu'); }
