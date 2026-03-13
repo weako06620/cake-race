@@ -249,13 +249,53 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .item-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:4px;gap:4px}
 .item-cost{font-family:'Fredoka One',cursive;font-size:.8rem;color:var(--choco);flex-shrink:0}
 .item-boost{font-size:.63rem;color:var(--mint);font-weight:800;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#s-end{background:rgba(255,248,240,.96);backdrop-filter:blur(12px);justify-content:center;padding:1.5rem 1rem;gap:.7rem}
-.end-emoji{font-size:clamp(3.5rem,12vw,7rem);animation:endBounce .6s ease-out}
-@keyframes endBounce{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+
 .end-title{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,7vw,3.5rem);text-align:center}
 .end-title.win{background:linear-gradient(135deg,#FFD93D,#FF8C69,#FF6B9D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .end-title.lose{color:#aaa}
 .end-podium{background:white;border-radius:20px;padding:1rem 1.3rem;box-shadow:0 12px 40px rgba(0,0,0,.08);width:100%;max-width:380px}
+/* ── ÉCRAN FIN ── */
+#s-end{background:#0d0d14;justify-content:flex-start;align-items:center;padding:2rem 1rem 1.5rem;gap:.6rem;overflow-y:auto}
+.end-rays{position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:conic-gradient(from 0deg at 50% 42%,
+    transparent 0deg,rgba(191,127,255,.07) 10deg,transparent 20deg,
+    transparent 40deg,rgba(255,217,61,.07) 50deg,transparent 60deg,
+    transparent 80deg,rgba(78,205,196,.07) 90deg,transparent 100deg,
+    transparent 120deg,rgba(255,107,157,.07) 130deg,transparent 140deg,
+    transparent 160deg,rgba(191,127,255,.07) 170deg,transparent 180deg,
+    transparent 200deg,rgba(255,217,61,.07) 210deg,transparent 220deg,
+    transparent 240deg,rgba(78,205,196,.07) 250deg,transparent 260deg,
+    transparent 280deg,rgba(255,107,157,.07) 290deg,transparent 300deg,
+    transparent 320deg,rgba(191,127,255,.07) 330deg,transparent 340deg);
+  animation:raysRot 10s linear infinite}
+@keyframes raysRot{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.end-circle{position:fixed;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,217,61,.15) 0%,transparent 70%);
+  animation:circPulse 2s ease-in-out infinite;z-index:1;top:10%}
+@keyframes circPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.end-emoji{font-size:clamp(4rem,13vw,7.5rem);line-height:1;position:relative;z-index:2;
+  animation:trophyDrop .7s cubic-bezier(.34,1.56,.64,1)}
+@keyframes trophyDrop{0%{transform:scale(0) rotate(-30deg) translateY(-50px);opacity:0}
+  70%{transform:scale(1.22) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.end-winner-name{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,9vw,4.5rem);
+  text-align:center;line-height:1.1;position:relative;z-index:2;
+  background:linear-gradient(135deg,#FFD93D 0%,#FF8C69 40%,#FF6B9D 70%,#bf7fff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,217,61,.4));
+  animation:nameReveal .6s cubic-bezier(.34,1.56,.64,1) .32s both}
+@keyframes nameReveal{0%{transform:scale(.2) translateY(25px);opacity:0}
+  70%{transform:scale(1.1) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+.end-subtitle{font-family:'Fredoka One',cursive;font-size:clamp(1rem,4vw,1.5rem);
+  color:rgba(255,255,255,.55);text-align:center;position:relative;z-index:2;
+  animation:fadeUp .5s ease .55s both}
+.end-lose-title{font-family:'Fredoka One',cursive;font-size:clamp(1.3rem,5vw,2.2rem);
+  color:rgba(255,255,255,.35);text-align:center;position:relative;z-index:2;
+  animation:fadeUp .5s ease .3s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.end-title{display:none}
+.end-podium{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.85);
+  border-radius:20px;padding:.85rem 1.2rem;width:100%;max-width:380px;
+  position:relative;z-index:2;animation:fadeUp .5s ease .7s both}
 .podium-row{display:flex;align-items:center;gap:10px;padding:.48rem .3rem;border-bottom:1px solid #f5f5f5;animation:slideIn .3s ease both}
 .podium-row:last-child{border-bottom:none}
 .podium-rank{font-family:'Fredoka One',cursive;font-size:1.2rem;width:32px;text-align:center;flex-shrink:0}
@@ -352,7 +392,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   <div class="game-header">
     <div class="timer-badge" id="timer">3:00</div>
     <div class="header-scores" id="headerScores"></div>
-    <div class="goal-badge" id="goalBadge">Meilleurs points gagne !</div>
+    <div class="goal-badge" id="goalBadge">🏆 50 000 pts</div>
   </div>
   <div class="game-body">
     <div class="game-center">
@@ -373,10 +413,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 <!-- END -->
 <div id="s-end" class="screen">
+  <div class="end-rays"></div>
+  <div class="end-circle"></div>
   <div class="end-emoji" id="endEmoji"></div>
+  <div class="end-winner-name" id="endWinnerName" style="display:none"></div>
+  <div class="end-subtitle" id="endSubtitle"></div>
+  <div class="end-lose-title" id="endLoseTitle" style="display:none"></div>
   <div class="end-title" id="endTitle"></div>
-  <div class="end-podium" id="endPodium"></div>
-  <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:.55rem">
+  <div class="end-podium" id="endPodium" style="margin-top:.6rem"></div>
+  <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:.55rem;position:relative;z-index:2;margin-top:.6rem">
     <button class="btn btn-secondary" onclick="playAgain()">🔄 Rejouer</button>
     <button class="btn btn-gray" onclick="backToMenu()">🏠 Menu</button>
   </div>
@@ -386,7 +431,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 // ══════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════
-const GOAL = 100000; // barre de progression fixe — victoire = plus de points au temps écoulé
+const GOAL = 50000; // premier à 50 000 pts gagne
 const GAME_DURATION = 180;
 // Broker MQTT public — zéro compte, zéro config, marche sur tout WiFi
 const BROKER        = 'wss://broker.hivemq.com:8884/mqtt';
@@ -698,7 +743,7 @@ function onGuestMsg(msg) {
   }
   if (msg.type === 'score' && gameActive && players[msg.guestId]) {
     players[msg.guestId].score = msg.score;
-
+    if (msg.score >= GOAL) hostEndGame(msg.guestId);
   }
 }
 
@@ -828,6 +873,7 @@ function startGame(initPlayers) {
           const gain = speed * 0.2 * (0.7 + Math.random() * 0.6);
           bp.score += gain;
           players[bid].score = Math.floor(bp.score);
+          if (bp.score >= GOAL) { hostEndGame(bid); return; }
         });
       }, 200);
     }
@@ -867,7 +913,10 @@ function handleClick(e) {
   spawnClickScore(e.clientX,e.clientY,gained);
   spawnParticles(e.clientX,e.clientY,4);
   updateDisplay(); syncScore();
-
+  if(myScore>=GOAL){
+    if(isHost) hostEndGame(myId);
+    else pub(TG2H(),{type:'score',guestId:myId,score:Math.floor(myScore)});
+  }
 }
 
 function hostEndGame(winnerId) {
@@ -883,24 +932,49 @@ function hostEndGame(winnerId) {
 function endGame(winnerId, sorted) {
   gameActive=false; clearInts();
   showScreen('s-end');
-  const iWon=winnerId===myId||(!winnerId&&sorted?.[0]?.id===myId);
+  const iWon = winnerId===myId||(!winnerId&&sorted?.[0]?.id===myId);
+  const winner = (sorted||[]).find(p=>p.id===winnerId) || sorted?.[0];
+  const winnerName = winner ? esc(winner.name) : '???';
+
   if(iWon) playWin(); else playLose();
-  document.getElementById('endEmoji').textContent=iWon?'🏆':'🥲';
-  const t=document.getElementById('endTitle');
-  t.textContent=iWon?'TU AS GAGNÉ !':'BIEN JOUÉ !';
-  t.className='end-title '+(iWon?'win':'lose');
+
+  // Trophée
+  const emojiEl = document.getElementById('endEmoji');
+  emojiEl.textContent = iWon ? '🏆' : '🎂';
+  emojiEl.style.animation = 'none'; void emojiEl.offsetWidth; emojiEl.style.animation = '';
+
+  if(iWon) {
+    // Victoire : grand nom + subtitle
+    document.getElementById('endWinnerName').style.display = 'block';
+    document.getElementById('endWinnerName').textContent = winnerName;
+    document.getElementById('endSubtitle').textContent = '🎉 A GAGNÉ !';
+    document.getElementById('endLoseTitle').style.display = 'none';
+    spawnConfetti();
+  } else {
+    // Défaite
+    document.getElementById('endWinnerName').style.display = 'block';
+    document.getElementById('endWinnerName').style.background = 'linear-gradient(135deg,#4ECDC4,#2af598)';
+    document.getElementById('endWinnerName').style.webkitBackgroundClip = 'text';
+    document.getElementById('endWinnerName').style.backgroundClip = 'text';
+    document.getElementById('endWinnerName').textContent = winnerName;
+    document.getElementById('endSubtitle').textContent = '🏆 A GAGNÉ !';
+    document.getElementById('endLoseTitle').style.display = 'block';
+    document.getElementById('endLoseTitle').textContent = 'BIEN JOUÉ 🎂';
+  }
+
+  // Podium
   const pod=document.getElementById('endPodium'); pod.innerHTML='';
   const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
   (sorted||[]).forEach((p,i)=>{
     const isMe=p.id===myId, row=document.createElement('div');
     row.className='podium-row'; row.style.animationDelay=(i*.09)+'s';
+    const col=PLAYER_COLORS[p.colorIdx||0];
     row.innerHTML=`<div class="podium-rank">${medals[i]||'·'}</div>
       <div class="podium-avatar">${PLAYER_AVATARS[p.avatarIdx||0]}</div>
-      <div class="podium-name" style="${isMe?'color:var(--peach)':''}">${esc(p.name)}${isMe?'<span style="font-size:.68rem;opacity:.6"> (toi)</span>':''}</div>
-      <div class="podium-score">${Math.floor(p.score)} pts</div>`;
+      <div class="podium-name" style="${isMe?'color:#FFD93D':'color:rgba(255,255,255,.8)'}">${esc(p.name)}${isMe?'<span style="font-size:.65rem;opacity:.6"> (toi)</span>':''}</div>
+      <div class="podium-score" style="color:rgba(255,255,255,.5)">${Math.floor(p.score).toLocaleString()} pts</div>`;
     pod.appendChild(row);
   });
-  if(iWon) spawnConfetti();
 }
 
 function playAgain() {
