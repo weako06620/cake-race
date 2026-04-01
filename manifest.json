@@ -1,24 +1,14 @@
 {
   "name": "Jeu Débile VS",
   "short_name": "Jeu Débile",
-  "description": "8 mini-jeux stupides en solo ou VS multijoueur",
+  "description": "16 mini-jeux stupides en solo ou VS multijoueur",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#1a0a2e",
   "theme_color": "#1a0a2e",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ]
 }
